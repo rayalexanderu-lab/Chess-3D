@@ -6,83 +6,53 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Chess Game</title>
     <style>
-      #sw-admin-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:999997; overflow-y:auto; padding:24px; font-family:system-ui, sans-serif; color:#f4f4f5; }
-      .sw-box { max-width:850px; margin:20px auto; background:#18181b; border:1px solid #27272a; border-radius:12px; padding:22px; }
-      .sw-input { width:100%; box-sizing:border-box; padding:10px; margin:8px 0 14px; border-radius:6px; border:1px solid #3f3f46; background:#09090b; color:#fff; }
-      .sw-btn { padding:9px 14px; border:none; border-radius:6px; font-weight:600; cursor:pointer; margin-right:6px; }
-      .sw-green { background:#16a34a; color:#fff; }
-      .sw-yellow { background:#eab308; color:#000; }
-      .sw-red { background:#dc2626; color:#fff; }
-      .sw-gray { background:#3f3f46; color:#fff; }
-      .sw-table { width:100%; border-collapse:collapse; margin-top:10px; }
-      .sw-table th, .sw-table td { text-align:left; padding:10px; border-bottom:1px solid #27272a; font-size:0.92rem; }
-      .sw-badge { background:#16a34a33; color:#4ade80; padding:4px 10px; border-radius:999px; font-weight:bold; }
+      #sw-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:999997; overflow-y:auto; padding:24px; font-family:sans-serif; color:#f4f4f5; }
+      .sw-box { max-width:820px; margin:20px auto; background:#18181b; border:1px solid #27272a; border-radius:12px; padding:20px; }
+      .sw-in { width:100%; box-sizing:border-box; padding:10px; margin:8px 0 12px; border-radius:6px; border:1px solid #3f3f46; background:#09090b; color:#fff; }
+      .sw-btn { padding:8px 14px; border:none; border-radius:6px; font-weight:600; cursor:pointer; margin-right:6px; }
+      .sw-g { background:#16a34a; color:#fff; } .sw-y { background:#eab308; color:#000; } .sw-r { background:#dc2626; color:#fff; } .sw-gr { background:#3f3f46; color:#fff; }
+      .sw-tbl { width:100%; border-collapse:collapse; margin-top:8px; }
+      .sw-tbl th, .sw-tbl td { text-align:left; padding:9px; border-bottom:1px solid #27272a; font-size:0.9rem; }
     </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 
-    <!-- Secret Corner Trigger (Bottom Right) -->
-    <button id="sw-secret-dot" title="Admin" style="position:fixed; bottom:6px; right:6px; width:14px; height:14px; background:transparent; border:none; opacity:0.25; color:#fff; cursor:pointer; z-index:999900; font-size:12px;">•</button>
+    <button id="sw-dot" title="Admin" style="position:fixed;bottom:6px;right:6px;width:16px;height:16px;background:transparent;border:none;opacity:0.35;color:#fff;cursor:pointer;z-index:999900;">•</button>
 
-    <!-- Live Announcement Banner -->
-    <div id="sw-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#16a34a; color:#fff; text-align:center; padding:12px 40px 12px 16px; font-family:sans-serif; font-weight:bold; z-index:999998; box-shadow:0 2px 10px rgba(0,0,0,0.5);">
-      <span id="sw-banner-text"></span>
-      <button onclick="document.getElementById('sw-banner').style.display='none'" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
+    <div id="sw-banner" style="display:none;position:fixed;top:0;left:0;width:100%;background:#16a34a;color:#fff;text-align:center;padding:12px 40px 12px 16px;font-family:sans-serif;font-weight:bold;z-index:999998;">
+      <span id="sw-banner-txt"></span>
+      <button onclick="document.getElementById('sw-banner').style.display='none'" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);background:none;border:none;color:#fff;font-size:20px;cursor:pointer;">&times;</button>
     </div>
 
-    <!-- Ban Lock Screen -->
-    <div id="sw-ban-screen" style="display:none; position:fixed; inset:0; background:#09090b; color:#ef4444; font-family:sans-serif; z-index:999999; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
-      <h1 style="font-size:2.2rem; margin-bottom:12px;">Access Denied</h1>
-      <p style="color:#d4d4d8; font-size:1.1rem; max-width:460px;">You have been banned from <strong>spellingwork.com</strong> by the administrator.</p>
+    <div id="sw-ban" style="display:none;position:fixed;inset:0;background:#09090b;color:#ef4444;font-family:sans-serif;z-index:999999;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;">
+      <h1>Access Denied</h1>
+      <p style="color:#d4d4d8;">You have been banned from <strong>spellingwork.com</strong> by the administrator.</p>
     </div>
 
-    <!-- Hidden Admin Modal -->
-    <div id="sw-admin-modal">
-      <div class="sw-box" id="sw-login-card" style="max-width:400px; margin-top:80px;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <h2 style="margin:0;">Admin Login</h2>
-          <button class="sw-btn sw-gray" id="sw-close-login">Close</button>
-        </div>
-        <input class="sw-input" type="email" id="sw-email" placeholder="Admin Email" />
-        <input class="sw-input" type="password" id="sw-password" placeholder="Admin Password" />
-        <button class="sw-btn sw-green" id="sw-login-btn" style="width:100%;">Sign In</button>
-        <p id="sw-login-err" style="color:#ef4444; font-size:0.9rem;"></p>
+    <div id="sw-modal">
+      <div class="sw-box" id="sw-login" style="max-width:380px;margin-top:80px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;"><h2 style="margin:0;">Admin Login</h2><button class="sw-btn sw-gr" id="sw-x1">Close</button></div>
+        <input class="sw-in" type="email" id="sw-em" placeholder="Admin Email" />
+        <input class="sw-in" type="password" id="sw-pw" placeholder="Admin Password" />
+        <button class="sw-btn sw-g" id="sw-go" style="width:100%;">Sign In</button>
+        <p id="sw-err" style="color:#ef4444;font-size:0.9rem;"></p>
       </div>
 
-      <div class="sw-box" id="sw-dash-card" style="display:none;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+      <div class="sw-box" id="sw-dash" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
           <h2 style="margin:0;">spellingwork.com Admin</h2>
-          <div>
-            <span class="sw-badge" id="sw-online-count">0 Online</span>
-            <button class="sw-btn sw-gray" id="sw-logout-btn" style="margin-left:8px;">Logout</button>
-            <button class="sw-btn sw-gray" id="sw-close-dash">Close</button>
-          </div>
+          <div><span id="sw-cnt" style="background:#16a34a33;color:#4ade80;padding:4px 10px;border-radius:99px;font-weight:bold;">0 Online</span>
+          <button class="sw-btn sw-gr" id="sw-out" style="margin-left:8px;">Logout</button><button class="sw-btn sw-gr" id="sw-x2">Close</button></div>
         </div>
-
-        <div style="margin-bottom:22px;">
-          <h3 style="margin-bottom:6px;">Site-Wide Broadcast</h3>
-          <input class="sw-input" type="text" id="sw-broadcast-input" placeholder="Type announcement banner for all players..." />
-          <button class="sw-btn sw-green" id="sw-send-broadcast">Send Broadcast</button>
-          <button class="sw-btn sw-gray" id="sw-clear-broadcast">Clear Banner</button>
-        </div>
-
-        <div style="margin-bottom:22px;">
-          <h3 style="margin-bottom:6px;">Live Players on Site</h3>
-          <table class="sw-table">
-            <thead><tr><th>Device ID</th><th>Device Type</th><th>Actions</th></tr></thead>
-            <tbody id="sw-visitors-table"></tbody>
-          </table>
-        </div>
-
-        <div>
-          <h3 style="margin-bottom:6px;">Banned Devices</h3>
-          <table class="sw-table">
-            <thead><tr><th>Banned Device ID</th><th>Action</th></tr></thead>
-            <tbody id="sw-bans-table"></tbody>
-          </table>
-        </div>
+        <h3>Site-Wide Broadcast</h3>
+        <input class="sw-in" type="text" id="sw-b-in" placeholder="Announcement message for all players..." />
+        <button class="sw-btn sw-g" id="sw-b-send">Send Broadcast</button><button class="sw-btn sw-gr" id="sw-b-clr">Clear Banner</button>
+        <h3 style="margin-top:20px;">Live Players</h3>
+        <table class="sw-tbl"><thead><tr><th>Device ID</th><th>Type</th><th>Actions</th></tr></thead><tbody id="sw-vis"></tbody></table>
+        <h3 style="margin-top:20px;">Banned Devices</h3>
+        <table class="sw-tbl"><thead><tr><th>Banned ID</th><th>Action</th></tr></thead><tbody id="sw-bans"></tbody></table>
       </div>
     </div>
 
@@ -91,178 +61,57 @@
       import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://gstatic.com";
       import { getDatabase, ref, set, onValue, onDisconnect, remove, serverTimestamp } from "https://gstatic.com";
 
-      const firebaseConfig = {
+      const app = initializeApp({
         apiKey: "AIzaSyCXBFLnp-R7KsDEASEUFmbF73yv8e0FtYE",
         authDomain: "://firebaseapp.com",
         databaseURL: "https://firebaseio.com",
         projectId: "chess-a3fe5",
         storageBucket: "chess-a3fe5.firebasestorage.app",
         messagingSenderId: "382185933860",
-        appId: "1:382185933860:web:2e89b7ef6160c0d3879cb1",
-        measurementId: "G-D8EMM67HSX"
-      };
-
-      const app = initializeApp(firebaseConfig);
-      const auth = getAuth(app);
-      const db = getDatabase(app);
-
-      const modal = document.getElementById("sw-admin-modal");
-      const openAdmin = () => { modal.style.display = "block"; };
-      const closeAdmin = () => { modal.style.display = "none"; };
-
-      document.getElementById("sw-secret-dot").onclick = openAdmin;
-      document.getElementById("sw-close-login").onclick = closeAdmin;
-      document.getElementById("sw-close-dash").onclick = closeAdmin;
-      window.addEventListener("keydown", (e) => {
-        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "a") {
-          e.preventDefault();
-          modal.style.display = modal.style.display === "block" ? "none" : "block";
-        }
+        appId: "1:382185933860:web:2e89b7ef6160c0d3879cb1"
       });
-      let deviceId = localStorage.getItem("sw_device_id");
-      if (!deviceId) {
-        deviceId = "dev_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).slice(-4);
-        localStorage.setItem("sw_device_id", deviceId);
-      }
+      const auth = getAuth(app), db = getDatabase(app);
 
-      function enforceBan() {
-        localStorage.setItem("sw_banned", "true");
-        const root = document.getElementById("root");
-        if (root) root.innerHTML = "";
-        document.getElementById("sw-ban-screen").style.display = "flex";
-      }
+      const modal = document.getElementById("sw-modal");
+      document.getElementById("sw-dot").onclick = () => modal.style.display = "block";
+      document.getElementById("sw-x1").onclick = document.getElementById("sw-x2").onclick = () => modal.style.display = "none";
+      window.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "a") { e.preventDefault(); modal.style.display = modal.style.display === "block" ? "none" : "block"; } });
 
-      if (localStorage.getItem("sw_banned") === "true") enforceBan();
+      let id = localStorage.getItem("sw_id") || ("dev_" + Math.random().toString(36).slice(2, 10));
+      localStorage.setItem("sw_id", id);
+      const banScreen = () => { localStorage.setItem("sw_ban", "1"); const r = document.getElementById("root"); if (r) r.innerHTML = ""; document.getElementById("sw-ban").style.display = "flex"; };
+      if (localStorage.getItem("sw_ban") === "1") banScreen();
 
-      const ua = navigator.userAgent;
-      let deviceType = "Desktop";
-      if (/CrOS/.test(ua)) deviceType = "Chromebook";
-      else if (/iPhone|iPad|Android/.test(ua)) deviceType = "Mobile";
-      else if (/Windows/.test(ua)) deviceType = "Windows PC";
-      else if (/Mac/.test(ua)) deviceType = "Mac";
+      const ua = navigator.userAgent, type = /CrOS/.test(ua) ? "Chromebook" : /iPhone|iPad|Android/.test(ua) ? "Mobile" : /Windows/.test(ua) ? "Windows" : /Mac/.test(ua) ? "Mac" : "Desktop";
+      const sRef = ref(db, `active_sessions/${id}`);
+      onValue(ref(db, ".info/connected"), s => { if (s.val()) { onDisconnect(sRef).remove(); set(sRef, { deviceId: id, deviceType: type, joinedAt: serverTimestamp() }); } });
+      onValue(ref(db, "announcements/global"), s => { const d = s.val(), b = document.getElementById("sw-banner"); if (d?.text) { document.getElementById("sw-banner-txt").textContent = d.text; b.style.display = "block"; } else b.style.display = "none"; });
+      const wRef = ref(db, `warnings/${id}`);
+      onValue(wRef, s => { if (s.val()) { alert("ADMIN WARNING: " + s.val()); remove(wRef); } });
+      onValue(ref(db, `bans/${id}`), s => { if (s.val() === true) banScreen(); else localStorage.removeItem("sw_ban"); });
 
-      const sessionRef = ref(db, `active_sessions/${deviceId}`);
-      onValue(ref(db, ".info/connected"), (snap) => {
-        if (snap.val() === true) {
-          onDisconnect(sessionRef).remove();
-          set(sessionRef, { deviceId, deviceType, joinedAt: serverTimestamp() });
-        }
-      });
-
-      onValue(ref(db, "announcements/global"), (snap) => {
-        const data = snap.val();
-        const banner = document.getElementById("sw-banner");
-        if (data && data.text) {
-          document.getElementById("sw-banner-text").textContent = data.text;
-          banner.style.display = "block";
-        } else {
-          banner.style.display = "none";
-        }
-      });
-
-      const warnRef = ref(db, `warnings/${deviceId}`);
-      onValue(warnRef, (snap) => {
-        const msg = snap.val();
-        if (msg) {
-          alert("ADMIN WARNING: " + msg);
-          remove(warnRef);
-        }
-      });
-
-      onValue(ref(db, `bans/${deviceId}`), (snap) => {
-        if (snap.val() === true) enforceBan();
-        else localStorage.removeItem("sw_banned");
-      });
-
-      document.getElementById("sw-login-btn").onclick = async () => {
-        try {
-          await signInWithEmailAndPassword(auth, document.getElementById("sw-email").value, document.getElementById("sw-password").value);
-        } catch (err) {
-          document.getElementById("sw-login-err").textContent = err.message;
-        }
-      };
-
-      document.getElementById("sw-logout-btn").onclick = () => signOut(auth);
-
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
-          document.getElementById("sw-login-card").style.display = "none";
-          document.getElementById("sw-dash-card").style.display = "block";
-          loadAdminData();
-        } else {
-          document.getElementById("sw-login-card").style.display = "block";
-          document.getElementById("sw-dash-card").style.display = "none";
-        }
-      });
-
-      function loadAdminData() {
-        document.getElementById("sw-send-broadcast").onclick = () => {
-          const text = document.getElementById("sw-broadcast-input").value.trim();
-          if (text) set(ref(db, "announcements/global"), { text, time: Date.now() });
-        };
-
-        document.getElementById("sw-clear-broadcast").onclick = () => {
-          remove(ref(db, "announcements/global"));
-          document.getElementById("sw-broadcast-input").value = "";
-        };
-
-        onValue(ref(db, "active_sessions"), (snap) => {
-          const data = snap.val() || {};
-          const keys = Object.keys(data);
-          document.getElementById("sw-online-count").textContent = `${keys.length} Online`;
-          const tbody = document.getElementById("sw-visitors-table");
-          tbody.innerHTML = "";
-          keys.forEach((id) => {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td><code>${id}</code></td>
-              <td>${data[id].deviceType || "Unknown"}</td>
-              <td>
-                <button class="sw-btn sw-yellow" data-warn="${id}">Warn</button>
-                <button class="sw-btn sw-red" data-ban="${id}">Ban</button>
-              </td>
-            `;
-            tbody.appendChild(tr);
+      document.getElementById("sw-go").onclick = () => signInWithEmailAndPassword(auth, document.getElementById("sw-em").value, document.getElementById("sw-pw").value).catch(e => document.getElementById("sw-err").textContent = e.message);
+      document.getElementById("sw-out").onclick = () => signOut(auth);
+      onAuthStateChanged(auth, u => {
+        document.getElementById("sw-login").style.display = u ? "none" : "block";
+        document.getElementById("sw-dash").style.display = u ? "block" : "none";
+        if (u) {
+          document.getElementById("sw-b-send").onclick = () => { const t = document.getElementById("sw-b-in").value.trim(); if (t) set(ref(db, "announcements/global"), { text: t }); };
+          document.getElementById("sw-b-clr").onclick = () => { remove(ref(db, "announcements/global")); document.getElementById("sw-b-in").value = ""; };
+          onValue(ref(db, "active_sessions"), s => {
+            const d = s.val() || {}, ks = Object.keys(d), tb = document.getElementById("sw-vis");
+            document.getElementById("sw-cnt").textContent = `${ks.length} Online`; tb.innerHTML = "";
+            ks.forEach(k => { tb.innerHTML += `<tr><td><code>${k}</code></td><td>${d[k].deviceType || "Unknown"}</td><td><button class="sw-btn sw-y" onclick="window._swWarn('${k}')">Warn</button><button class="sw-btn sw-r" onclick="window._swBan('${k}')">Ban</button></td></tr>`; });
           });
-
-          tbody.querySelectorAll("[data-warn]").forEach((btn) => {
-            btn.onclick = () => {
-              const target = btn.getAttribute("data-warn");
-              const msg = prompt(`Send warning message to ${target}:`);
-              if (msg) set(ref(db, `warnings/${target}`), msg);
-            };
+          onValue(ref(db, "bans"), s => {
+            const d = s.val() || {}, tb = document.getElementById("sw-bans"); tb.innerHTML = "";
+            Object.keys(d).forEach(k => { if (d[k] === true) tb.innerHTML += `<tr><td><code>${k}</code></td><td><button class="sw-btn sw-gr" onclick="window._swUnban('${k}')">Unban</button></td></tr>`; });
           });
-
-          tbody.querySelectorAll("[data-ban]").forEach((btn) => {
-            btn.onclick = () => {
-              const target = btn.getAttribute("data-ban");
-              if (confirm(`Ban device ${target} from spellingwork.com?`)) {
-                set(ref(db, `bans/${target}`), true);
-              }
-            };
-          });
-        });
-
-        onValue(ref(db, "bans"), (snap) => {
-          const data = snap.val() || {};
-          const tbody = document.getElementById("sw-bans-table");
-          tbody.innerHTML = "";
-          Object.keys(data).forEach((id) => {
-            if (data[id] === true) {
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td><code>${id}</code></td>
-                <td><button class="sw-btn sw-gray" data-unban="${id}">Unban</button></td>
-              `;
-              tbody.appendChild(tr);
-            }
-          });
-
-          tbody.querySelectorAll("[data-unban]").forEach((btn) => {
-            btn.onclick = () => remove(ref(db, `bans/${btn.getAttribute("data-unban")}`));
-          });
-        });
-      }
+          window._swWarn = k => { const m = prompt(`Warning for ${k}:`); if (m) set(ref(db, `warnings/${k}`), m); };
+          window._swBan = k => { if (confirm(`Ban ${k}?`)) set(ref(db, `bans/${k}`), true); };
+          window._swUnban = k => remove(ref(db, `bans/${k}`));
+        }
+      });
     </script>
   </body>
 </html>
