@@ -9,5 +9,106 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Live Announcement Banner -->
+    <div id="sw-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#16a34a; color:#fff; text-align:center; padding:12px 40px 12px 16px; font-family:sans-serif; font-weight:bold; z-index:999998; box-shadow:0 2px 10px rgba(0,0,0,0.5);">
+      <span id="sw-banner-text"></span>
+      <button onclick="document.getElementById('sw-banner').style.display='none'" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); background:none; border:none; color:#fff; font-size:20px; cursor:pointer;">&times;</button>
+    </div>
+
+    <!-- Ban Lock Screen -->
+    <div id="sw-ban-screen" style="display:none; position:fixed; inset:0; background:#09090b; color:#ef4444; font-family:sans-serif; z-index:999999; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;">
+      <h1 style="font-size:2.2rem; margin-bottom:12px;">Access Denied</h1>
+      <p style="color:#d4d4d8; font-size:1.1rem; max-width:460px;">You have been banned from <strong>spellingwork.com</strong> by the administrator.</p>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://gstatic.com";
+      import { getDatabase, ref, set, onValue, onDisconnect, remove, serverTimestamp } from "https://gstatic.com";
+
+      const firebaseConfig = {
+        apiKey: "AIzaSyCXBFLnp-R7KsDEASEUFmbF73yv8e0FtYE",
+        authDomain: "chess-a3fe5.firebaseapp.com",
+        databaseURL: "https://chess-a3fe5-default-rtdb.firebaseio.com",
+        projectId: "chess-a3fe5",
+        storageBucket: "chess-a3fe5.firebasestorage.app",
+        messagingSenderId: "382185933860",
+        appId: "1:382185933860:web:2e89b7ef6160c0d3879cb1",
+        measurementId: "G-D8EMM67HSX"
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getDatabase(app);
+
+      // Persistent Device ID without sign-in
+      let deviceId = localStorage.getItem("sw_device_id");
+      if (!deviceId) {
+        deviceId = "dev_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).slice(-4);
+        localStorage.setItem("sw_device_id", deviceId);
+      }
+
+      function enforceBan() {
+        localStorage.setItem("sw_banned", "true");
+        const root = document.getElementById("root");
+        if (root) root.innerHTML = "";
+        document.getElementById("sw-ban-screen").style.display = "flex";
+      }
+
+      if (localStorage.getItem("sw_banned") === "true") {
+        enforceBan();
+      }
+
+      // Detect Device / OS
+      const ua = navigator.userAgent;
+      let deviceType = "Desktop";
+      if (/CrOS/.test(ua)) deviceType = "Chromebook";
+      else if (/iPhone|iPad|Android/.test(ua)) deviceType = "Mobile";
+      else if (/Windows/.test(ua)) deviceType = "Windows PC";
+      else if (/Mac/.test(ua)) deviceType = "Mac";
+
+      // Register live session
+      const sessionRef = ref(db, `active_sessions/${deviceId}`);
+      onValue(ref(db, ".info/connected"), (snap) => {
+        if (snap.val() === true) {
+          onDisconnect(sessionRef).remove();
+          set(sessionRef, {
+            deviceId,
+            deviceType,
+            joinedAt: serverTimestamp()
+          });
+        }
+      });
+
+      // Listen for Global Announcements
+      onValue(ref(db, "announcements/global"), (snap) => {
+        const data = snap.val();
+        const banner = document.getElementById("sw-banner");
+        if (data && data.text) {
+          document.getElementById("sw-banner-text").textContent = data.text;
+          banner.style.display = "block";
+        } else {
+          banner.style.display = "none";
+        }
+      });
+
+      // Listen for Direct Warnings
+      const warnRef = ref(db, `warnings/${deviceId}`);
+      onValue(warnRef, (snap) => {
+        const msg = snap.val();
+        if (msg) {
+          alert("⚠️ ADMIN WARNING:\n\n" + msg);
+          remove(warnRef);
+        }
+      });
+
+      // Listen for Bans
+      onValue(ref(db, `bans/${deviceId}`), (snap) => {
+        if (snap.val() === true) {
+          enforceBan();
+        } else {
+          localStorage.removeItem("sw_banned");
+        }
+      });
+    </script>
   </body>
 </html>
