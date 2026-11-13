@@ -5,10 +5,26 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>3D Chess Game</title>
+    <style>
+      #sw-admin-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.88); z-index:999997; overflow-y:auto; padding:24px; font-family:system-ui, sans-serif; color:#f4f4f5; }
+      .sw-box { max-width:850px; margin:20px auto; background:#18181b; border:1px solid #27272a; border-radius:12px; padding:22px; }
+      .sw-input { width:100%; box-sizing:border-box; padding:10px; margin:8px 0 14px; border-radius:6px; border:1px solid #3f3f46; background:#09090b; color:#fff; }
+      .sw-btn { padding:9px 14px; border:none; border-radius:6px; font-weight:600; cursor:pointer; margin-right:6px; }
+      .sw-green { background:#16a34a; color:#fff; }
+      .sw-yellow { background:#eab308; color:#000; }
+      .sw-red { background:#dc2626; color:#fff; }
+      .sw-gray { background:#3f3f46; color:#fff; }
+      .sw-table { width:100%; border-collapse:collapse; margin-top:10px; }
+      .sw-table th, .sw-table td { text-align:left; padding:10px; border-bottom:1px solid #27272a; font-size:0.92rem; }
+      .sw-badge { background:#16a34a33; color:#4ade80; padding:4px 10px; border-radius:999px; font-weight:bold; }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <!-- Secret Corner Trigger (Bottom Right) -->
+    <button id="sw-secret-dot" title="Admin" style="position:fixed; bottom:6px; right:6px; width:14px; height:14px; background:transparent; border:none; opacity:0.15; color:#fff; cursor:pointer; z-index:999900; font-size:10px;">•</button>
 
     <!-- Live Announcement Banner -->
     <div id="sw-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#16a34a; color:#fff; text-align:center; padding:12px 40px 12px 16px; font-family:sans-serif; font-weight:bold; z-index:999998; box-shadow:0 2px 10px rgba(0,0,0,0.5);">
@@ -22,14 +38,63 @@
       <p style="color:#d4d4d8; font-size:1.1rem; max-width:460px;">You have been banned from <strong>spellingwork.com</strong> by the administrator.</p>
     </div>
 
+    <!-- Hidden Admin Modal -->
+    <div id="sw-admin-modal">
+      <div class="sw-box" id="sw-login-card" style="max-width:400px; margin-top:80px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <h2 style="margin:0;">Admin Login</h2>
+          <button class="sw-btn sw-gray" id="sw-close-login">Close</button>
+        </div>
+        <input class="sw-input" type="email" id="sw-email" placeholder="Admin Email" />
+        <input class="sw-input" type="password" id="sw-password" placeholder="Admin Password" />
+        <button class="sw-btn sw-green" id="sw-login-btn" style="width:100%;">Sign In</button>
+        <p id="sw-login-err" style="color:#ef4444; font-size:0.9rem;"></p>
+      </div>
+
+      <div class="sw-box" id="sw-dash-card" style="display:none;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+          <h2 style="margin:0;">spellingwork.com Admin</h2>
+          <div>
+            <span class="sw-badge" id="sw-online-count">0 Online</span>
+            <button class="sw-btn sw-gray" id="sw-logout-btn" style="margin-left:8px;">Logout</button>
+            <button class="sw-btn sw-gray" id="sw-close-dash">Close</button>
+          </div>
+        </div>
+
+        <div style="margin-bottom:22px;">
+          <h3 style="margin-bottom:6px;">Site-Wide Broadcast</h3>
+          <input class="sw-input" type="text" id="sw-broadcast-input" placeholder="Type announcement banner for all players..." />
+          <button class="sw-btn sw-green" id="sw-send-broadcast">Send Broadcast</button>
+          <button class="sw-btn sw-gray" id="sw-clear-broadcast">Clear Banner</button>
+        </div>
+
+        <div style="margin-bottom:22px;">
+          <h3 style="margin-bottom:6px;">Live Players on Site</h3>
+          <table class="sw-table">
+            <thead><tr><th>Device ID</th><th>Device Type</th><th>Actions</th></tr></thead>
+            <tbody id="sw-visitors-table"></tbody>
+          </table>
+        </div>
+
+        <div>
+          <h3 style="margin-bottom:6px;">Banned Devices</h3>
+          <table class="sw-table">
+            <thead><tr><th>Banned Device ID</th><th>Action</th></tr></thead>
+            <tbody id="sw-bans-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <script type="module">
       import { initializeApp } from "https://gstatic.com";
+      import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://gstatic.com";
       import { getDatabase, ref, set, onValue, onDisconnect, remove, serverTimestamp } from "https://gstatic.com";
 
       const firebaseConfig = {
         apiKey: "AIzaSyCXBFLnp-R7KsDEASEUFmbF73yv8e0FtYE",
-        authDomain: "chess-a3fe5.firebaseapp.com",
-        databaseURL: "https://chess-a3fe5-default-rtdb.firebaseio.com",
+        authDomain: "://firebaseapp.com",
+        databaseURL: "https://firebaseio.com",
         projectId: "chess-a3fe5",
         storageBucket: "chess-a3fe5.firebasestorage.app",
         messagingSenderId: "382185933860",
@@ -38,9 +103,25 @@
       };
 
       const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
       const db = getDatabase(app);
 
-      // Persistent Device ID without sign-in
+      // Toggle Admin Modal via Ctrl+Shift+A or bottom-right dot
+      const modal = document.getElementById("sw-admin-modal");
+      const openAdmin = () => { modal.style.display = "block"; };
+      const closeAdmin = () => { modal.style.display = "none"; };
+
+      document.getElementById("sw-secret-dot").onclick = openAdmin;
+      document.getElementById("sw-close-login").onclick = closeAdmin;
+      document.getElementById("sw-close-dash").onclick = closeAdmin;
+      window.addEventListener("keydown", (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "a") {
+          e.preventDefault();
+          modal.style.display = modal.style.display === "block" ? "none" : "block";
+        }
+      });
+
+      // Visitor Tracking & Enforcement
       let deviceId = localStorage.getItem("sw_device_id");
       if (!deviceId) {
         deviceId = "dev_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).slice(-4);
@@ -54,11 +135,8 @@
         document.getElementById("sw-ban-screen").style.display = "flex";
       }
 
-      if (localStorage.getItem("sw_banned") === "true") {
-        enforceBan();
-      }
+      if (localStorage.getItem("sw_banned") === "true") enforceBan();
 
-      // Detect Device / OS
       const ua = navigator.userAgent;
       let deviceType = "Desktop";
       if (/CrOS/.test(ua)) deviceType = "Chromebook";
@@ -66,20 +144,14 @@
       else if (/Windows/.test(ua)) deviceType = "Windows PC";
       else if (/Mac/.test(ua)) deviceType = "Mac";
 
-      // Register live session
       const sessionRef = ref(db, `active_sessions/${deviceId}`);
       onValue(ref(db, ".info/connected"), (snap) => {
         if (snap.val() === true) {
           onDisconnect(sessionRef).remove();
-          set(sessionRef, {
-            deviceId,
-            deviceType,
-            joinedAt: serverTimestamp()
-          });
+          set(sessionRef, { deviceId, deviceType, joinedAt: serverTimestamp() });
         }
       });
 
-      // Listen for Global Announcements
       onValue(ref(db, "announcements/global"), (snap) => {
         const data = snap.val();
         const banner = document.getElementById("sw-banner");
@@ -91,7 +163,6 @@
         }
       });
 
-      // Listen for Direct Warnings
       const warnRef = ref(db, `warnings/${deviceId}`);
       onValue(warnRef, (snap) => {
         const msg = snap.val();
@@ -101,14 +172,32 @@
         }
       });
 
-      // Listen for Bans
       onValue(ref(db, `bans/${deviceId}`), (snap) => {
-        if (snap.val() === true) {
-          enforceBan();
+        if (snap.val() === true) enforceBan();
+        else localStorage.removeItem("sw_banned");
+      });
+
+      // Admin Auth & Controls
+      document.getElementById("sw-login-btn").onclick = async () => {
+        try {
+          await signInWithEmailAndPassword(auth, document.getElementById("sw-email").value, document.getElementById("sw-password").value);
+        } catch (err) {
+          document.getElementById("sw-login-err").textContent = err.message;
+        }
+      };
+
+      document.getElementById("sw-logout-btn").onclick = () => signOut(auth);
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          document.getElementById("sw-login-card").style.display = "none";
+          document.getElementById("sw-dash-card").style.display = "block";
+          loadAdminData();
         } else {
-          localStorage.removeItem("sw_banned");
+          document.getElementById("sw-login-card").style.display = "block";
+          document.getElementById("sw-dash-card").style.display = "none";
         }
       });
-    </script>
-  </body>
-</html>
+
+      function loadAdminData() {
+        document.getElementById("sw-send-broadcast").onclick = () => {
