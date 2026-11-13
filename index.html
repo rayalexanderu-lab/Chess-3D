@@ -24,7 +24,7 @@
     <script type="module" src="/src/main.tsx"></script>
 
     <!-- Secret Corner Trigger (Bottom Right) -->
-    <button id="sw-secret-dot" title="Admin" style="position:fixed; bottom:6px; right:6px; width:14px; height:14px; background:transparent; border:none; opacity:0.15; color:#fff; cursor:pointer; z-index:999900; font-size:10px;">•</button>
+    <button id="sw-secret-dot" title="Admin" style="position:fixed; bottom:6px; right:6px; width:14px; height:14px; background:transparent; border:none; opacity:0.25; color:#fff; cursor:pointer; z-index:999900; font-size:12px;">•</button>
 
     <!-- Live Announcement Banner -->
     <div id="sw-banner" style="display:none; position:fixed; top:0; left:0; width:100%; background:#16a34a; color:#fff; text-align:center; padding:12px 40px 12px 16px; font-family:sans-serif; font-weight:bold; z-index:999998; box-shadow:0 2px 10px rgba(0,0,0,0.5);">
@@ -106,7 +106,6 @@
       const auth = getAuth(app);
       const db = getDatabase(app);
 
-      // Toggle Admin Modal via Ctrl+Shift+A or bottom-right dot
       const modal = document.getElementById("sw-admin-modal");
       const openAdmin = () => { modal.style.display = "block"; };
       const closeAdmin = () => { modal.style.display = "none"; };
@@ -120,8 +119,6 @@
           modal.style.display = modal.style.display === "block" ? "none" : "block";
         }
       });
-
-      // Visitor Tracking & Enforcement
       let deviceId = localStorage.getItem("sw_device_id");
       if (!deviceId) {
         deviceId = "dev_" + Math.random().toString(36).substring(2, 10) + Date.now().toString(36).slice(-4);
@@ -167,7 +164,7 @@
       onValue(warnRef, (snap) => {
         const msg = snap.val();
         if (msg) {
-          alert("⚠️ ADMIN WARNING:\n\n" + msg);
+          alert("ADMIN WARNING: " + msg);
           remove(warnRef);
         }
       });
@@ -177,7 +174,6 @@
         else localStorage.removeItem("sw_banned");
       });
 
-      // Admin Auth & Controls
       document.getElementById("sw-login-btn").onclick = async () => {
         try {
           await signInWithEmailAndPassword(auth, document.getElementById("sw-email").value, document.getElementById("sw-password").value);
@@ -201,3 +197,72 @@
 
       function loadAdminData() {
         document.getElementById("sw-send-broadcast").onclick = () => {
+          const text = document.getElementById("sw-broadcast-input").value.trim();
+          if (text) set(ref(db, "announcements/global"), { text, time: Date.now() });
+        };
+
+        document.getElementById("sw-clear-broadcast").onclick = () => {
+          remove(ref(db, "announcements/global"));
+          document.getElementById("sw-broadcast-input").value = "";
+        };
+
+        onValue(ref(db, "active_sessions"), (snap) => {
+          const data = snap.val() || {};
+          const keys = Object.keys(data);
+          document.getElementById("sw-online-count").textContent = `${keys.length} Online`;
+          const tbody = document.getElementById("sw-visitors-table");
+          tbody.innerHTML = "";
+          keys.forEach((id) => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td><code>${id}</code></td>
+              <td>${data[id].deviceType || "Unknown"}</td>
+              <td>
+                <button class="sw-btn sw-yellow" data-warn="${id}">Warn</button>
+                <button class="sw-btn sw-red" data-ban="${id}">Ban</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          tbody.querySelectorAll("[data-warn]").forEach((btn) => {
+            btn.onclick = () => {
+              const target = btn.getAttribute("data-warn");
+              const msg = prompt(`Send warning message to ${target}:`);
+              if (msg) set(ref(db, `warnings/${target}`), msg);
+            };
+          });
+
+          tbody.querySelectorAll("[data-ban]").forEach((btn) => {
+            btn.onclick = () => {
+              const target = btn.getAttribute("data-ban");
+              if (confirm(`Ban device ${target} from spellingwork.com?`)) {
+                set(ref(db, `bans/${target}`), true);
+              }
+            };
+          });
+        });
+
+        onValue(ref(db, "bans"), (snap) => {
+          const data = snap.val() || {};
+          const tbody = document.getElementById("sw-bans-table");
+          tbody.innerHTML = "";
+          Object.keys(data).forEach((id) => {
+            if (data[id] === true) {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td><code>${id}</code></td>
+                <td><button class="sw-btn sw-gray" data-unban="${id}">Unban</button></td>
+              `;
+              tbody.appendChild(tr);
+            }
+          });
+
+          tbody.querySelectorAll("[data-unban]").forEach((btn) => {
+            btn.onclick = () => remove(ref(db, `bans/${btn.getAttribute("data-unban")}`));
+          });
+        });
+      }
+    </script>
+  </body>
+</html>
